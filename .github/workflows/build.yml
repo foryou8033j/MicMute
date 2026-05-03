@@ -1,0 +1,42 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - master
+    tags:
+      - "v*"
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+
+jobs:
+  windows:
+    name: Windows x64
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve version
+        shell: pwsh
+        run: |
+          $version = (Get-Content -Path VERSION -Raw).Trim()
+          if ($env:GITHUB_REF -like 'refs/tags/v*') {
+            $version = $env:GITHUB_REF_NAME.TrimStart('v')
+          }
+          "MICMUTE_VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Append
+          "MICMUTE_ARTIFACT=MicMute-$version-win-x64" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+      - name: Build
+        shell: pwsh
+        run: .\build.ps1 -Version $env:MICMUTE_VERSION
+
+      - name: Upload executable
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.MICMUTE_ARTIFACT }}
+          path: bin/MicMute.exe
+          if-no-files-found: error

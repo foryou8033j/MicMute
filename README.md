@@ -22,6 +22,14 @@ Run after build:
 .\build.ps1 -Run
 ```
 
+## Version
+
+The app version is managed in the root `VERSION` file. The build script embeds it into the generated executable metadata.
+
+```powershell
+.\build.ps1 -Version 1.2.3
+```
+
 ## Features
 
 - Select the microphone endpoint to control, or use the current Windows default microphone.
