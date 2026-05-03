@@ -11,6 +11,9 @@ on:
       - master
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   windows:
     name: Windows x64
@@ -34,9 +37,33 @@ jobs:
         shell: pwsh
         run: .\build.ps1 -Version $env:MICMUTE_VERSION
 
-      - name: Upload executable
+      - name: Package
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path dist | Out-Null
+          Copy-Item -Path bin/MicMute.exe -Destination dist/MicMute.exe -Force
+          Compress-Archive -Path dist/MicMute.exe -DestinationPath "dist/$env:MICMUTE_ARTIFACT.zip" -Force
+
+      - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.MICMUTE_ARTIFACT }}
-          path: bin/MicMute.exe
+          path: |
+            bin/MicMute.exe
+            dist/${{ env.MICMUTE_ARTIFACT }}.zip
           if-no-files-found: error
+
+      - name: Publish GitHub release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          name: MicMute ${{ env.MICMUTE_VERSION }}
+          tag_name: ${{ github.ref_name }}
+          make_latest: true
+          body: |
+            MicMute ${{ env.MICMUTE_VERSION }}
+
+            Windows x64 build artifact is attached below.
+          files: |
+            bin/MicMute.exe
+            dist/${{ env.MICMUTE_ARTIFACT }}.zip
